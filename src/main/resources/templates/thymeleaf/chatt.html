@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+	<style type="text/css">
+		#talklist{
+			border:1px solid;
+			width: 600px;
+			height: 400px
+		}
+		#msg{
+			border:1px solid;
+			width: 550px;
+			margin-top: 10px
+		}
+		#sendbtn{
+			height: 40px;
+			margin-top: 10px;
+		}
+		#id{
+			width: 350px;
+			margin-bottom: 10px
+		}
+		.me{
+			background: #FAECC5;
+			width: 70%;
+			float : right;
+			margin : 1px;
+		}
+		.other {
+			background: #EAEAEA;
+			width: 70%;
+			float : left;
+			margin : 1px;
+		}
+		
+	</style>
+	
+</head>
+<body>
+	<div id='chatt'>
+		<h1>웹 소켓 채팅</h1>
+		<input type='text' id='id' >
+		<input type='button' value='채팅참여' id='joinbtn' >
+		<input type='button' value='채팅종료' id='btnclose' >
+		<br/>
+		<div id='talklist'></div>
+		<div id='sendZone'>
+			<textarea id='msg' ></textarea>
+			<input type='button' value='전송' id='sendbtn'>
+		</div>
+	</div>
+	<script type="text/javascript">
+		let mydata = {};//전송 데이터(JSON)
+		$(document).ready(function(){
+			$("#joinbtn").on("click", function(){
+				ws = new WebSocket("ws://" + location.host + "/chat");
+				//웹 소켓에서 메시지가 날라왔을 때 호출되는 이벤트
+				ws.onmessage = function(msg){
+					console.log(msg);
+					let resmsg = JSON.parse(msg.data);
+					if(resmsg.id==$("#id").val()){
+						msgcss = "class=me";
+					} else {}
+						msgcss = "class=other"
+					let item = "<br><div" + msgcss+"><span><b>"+resmsg.id+ "</b></span>"+
+					"<b>[" +resmsg.date+"]</b>"+
+					"<span>" +resmsg.msg+"</span></div>";
+					$("#talklist").append(item)
+				}
+				 //웹 소켓이 연결되었을 때 호출되는 이벤트
+		        ws.onopen = function(message){
+		        	$("#talklist").append("server start...");
+		        };
+		        //웹 소켓이 닫혔을 때 호출되는 이벤트
+		        ws.onclose = function(message){
+		        	$("#talklist").append("Server Disconnect...\n");
+		        };
+		        //웹 소켓이 에러가 났을 때 호출되는 이벤트
+		        ws.onerror = function(message){
+		        	$("#talklist").append("error...\n");
+		        };
+				
+			})
+			$("#msg").on("keyup",function(ev){
+				if(ev.keyCode == 13){
+					sendMessage();
+				}
+				
+			})
+			$("#sendbtn").on("click",function(){
+				sendMessage();
+			})
+			$("#btnclose").on("click",function(){
+				ws.close();
+			})
+			
+		})
+		//Send 버튼을 누르면 실행되는 함수
+        function sendMessage(){
+			let message = $("#msg").val();
+			//서버로 보낼 데이터 만들기
+			//사용자 아이디 지금은 input에 입력한 값을 가져오지만 나중에는 세션에서 아이디 꺼내기
+			
+			mydata.id = $("#id").val();
+			mydata.msg = message;
+			mydata.date = new Date().toLocaleString();
+			let sendMsg = JSON.stringify(mydata);
+			//웹소켓으로 textMessage객체의 값을 보낸다.
+			ws.send(sendMsg);
+			$("#msg").val("");
+        }
+	</script>
+</body>
+</html>
